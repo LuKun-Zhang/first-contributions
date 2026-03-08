@@ -1,40 +1,44 @@
-# 工作流名称：简单的 CI 验证（适配 first-contributions 项目）
-name: Simple File Validation CI
+# 工作流名称：核心文件存在性验证（CI/CD 实践）
+name: Core File Validation CI
 
-# 触发条件：推送到 main 分支 / 提交 PR 到 main 分支
+# 触发条件：推送到 main 或提交 PR 到 main
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
 
-# 定义要执行的任务
 jobs:
-  validate-files:
-    # 在 GitHub 提供的最新 Ubuntu 系统上运行
+  validate-core-files:
+    # 运行环境：最新 Ubuntu
     runs-on: ubuntu-latest
-    
-    # 任务步骤
     steps:
-      # 步骤1：拉取仓库代码到虚拟环境
-      - name: Checkout repository code
+      # 步骤1：拉取代码（CI 必备步骤）
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # 步骤2：验证核心文件存在（确保代码拉取成功）
-      - name: Verify key files exist
+      # 步骤2：核心自动化测试——验证关键文件存在
+      - name: Run core validation test
         run: |
-          # 检查 README.md 和 Contributors.md 是否存在
-          if [ -f "README.md" ] && [ -f "Contributors.md" ]; then
-            echo "✅ 核心文件存在，验证通过！"
-          else
-            echo "❌ 核心文件缺失，验证失败！"
-            exit 1  # 退出并标记任务失败
-          fi
+          echo "🔍 开始执行自动化测试：验证核心文件是否存在"
+          # 定义需要检查的核心文件列表
+          REQUIRED_FILES=("README.md" "Contributors.md" "LICENSE")
+          FAILED=0
 
-      # 步骤3：简单的 Markdown 语法检查（可选，提升专业性）
-      - name: Check Markdown syntax (optional)
-        run: |
-          # 安装 Markdown 语法检查工具
-          sudo apt-get update && sudo apt-get install -y markdownlint-cli
-          # 检查 README.md，忽略超长行和图片标签的规则（避免无关报错）
-          markdownlint README.md --disable MD013 MD033 || echo "⚠️ Markdown 语法有小问题，但不影响核心功能"
+          for FILE in "${REQUIRED_FILES[@]}"; do
+            if [ -f "$FILE" ]; then
+              echo "✅ 测试通过：$FILE 存在"
+            else
+              echo "❌ 测试失败：$FILE 缺失"
+              FAILED=1
+            fi
+          done
+
+          # 根据检查结果退出，0=成功，1=失败
+          if [ $FAILED -eq 0 ]; then
+            echo "🎉 所有核心自动化测试通过！"
+            exit 0
+          else
+            echo "❌ 核心自动化测试失败！"
+            exit 1
+          fi

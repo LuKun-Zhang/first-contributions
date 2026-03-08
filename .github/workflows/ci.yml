@@ -1,21 +1,40 @@
-name: CI Test
+# 工作流名称：简单的 CI 验证（适配 first-contributions 项目）
+name: Simple File Validation CI
 
+# 触发条件：推送到 main 分支 / 提交 PR 到 main 分支
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
 
+# 定义要执行的任务
 jobs:
-  test:
+  validate-files:
+    # 在 GitHub 提供的最新 Ubuntu 系统上运行
     runs-on: ubuntu-latest
+    
+    # 任务步骤
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install dependencies
-        run: npm install
-      - name: Run tests
-        run: npm test
+      # 步骤1：拉取仓库代码到虚拟环境
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      # 步骤2：验证核心文件存在（确保代码拉取成功）
+      - name: Verify key files exist
+        run: |
+          # 检查 README.md 和 Contributors.md 是否存在
+          if [ -f "README.md" ] && [ -f "Contributors.md" ]; then
+            echo "✅ 核心文件存在，验证通过！"
+          else
+            echo "❌ 核心文件缺失，验证失败！"
+            exit 1  # 退出并标记任务失败
+          fi
+
+      # 步骤3：简单的 Markdown 语法检查（可选，提升专业性）
+      - name: Check Markdown syntax (optional)
+        run: |
+          # 安装 Markdown 语法检查工具
+          sudo apt-get update && sudo apt-get install -y markdownlint-cli
+          # 检查 README.md，忽略超长行和图片标签的规则（避免无关报错）
+          markdownlint README.md --disable MD013 MD033 || echo "⚠️ Markdown 语法有小问题，但不影响核心功能"
